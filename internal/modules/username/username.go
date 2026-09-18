@@ -157,10 +157,12 @@ func (m *Module) Run(ctx context.Context, username string, out chan<- core.Entit
 }
 
 // checkSite performs a single HTTP probe against one site definition.
+// It uses DoWithRetry so transient 429/502/503 responses are retried
+// with exponential backoff before a result is recorded.
 func (m *Module) checkSite(ctx context.Context, username string, site SiteDefinition) Result {
 	targetURL := strings.ReplaceAll(site.URL, "{}", username)
 
-	// Honour per-domain rate limit.
+	// Honour per-domain rate limit before the first attempt.
 	if err := m.limiter.Wait(ctx, targetURL); err != nil {
 		return Result{Site: site, URL: targetURL, Err: err}
 	}
@@ -170,15 +172,16 @@ func (m *Module) checkSite(ctx context.Context, username string, site SiteDefini
 		method = http.MethodGet
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, targetURL, nil)
-	if err != nil {
-		return Result{Site: site, URL: targetURL, Err: err}
-	}
-	for k, v := range site.Request.Headers {
-		req.Header.Set(k, v)
-	}
-
-	resp, err := m.client.Do(req)
+	resp, err := m.client.DoWithRetry(ctx, func() (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, method, targetURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range site.Request.Headers {
+			req.Header.Set(k, v)
+		}
+		return req, nil
+	})
 	if err != nil {
 		return Result{Site: site, URL: targetURL, Err: err}
 	}

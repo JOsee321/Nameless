@@ -2,7 +2,9 @@
 package core
 
 import (
+	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -83,4 +85,57 @@ func (c *Client) Get(url string) (*http.Response, error) {
 // access (e.g. cookie jars or redirect policies).
 func (c *Client) Underlying() *http.Client {
 	return c.http
+}
+
+// retryDelay is the initial backoff duration; it doubles on each retry.
+// Exported as a var (not const) so tests can shrink it to milliseconds.
+var retryDelay = time.Second
+
+// retryableStatus reports whether an HTTP status code warrants a retry.
+// Only transient server-side errors are retried — not client errors or 404s.
+func retryableStatus(code int) bool {
+	return code == http.StatusTooManyRequests || // 429
+		code == http.StatusBadGateway || // 502
+		code == http.StatusServiceUnavailable // 503
+}
+
+// DoWithRetry executes the request produced by makeReq and retries up to 3
+// times on 429/502/503 responses with exponential backoff (1s → 2s → 4s).
+//
+// makeReq is called once per attempt so callers can build a fresh
+// *http.Request each time — this is required for POST requests whose bodies
+// are consumed on first read and cannot be rewound.
+//
+// On non-retryable errors or status codes the response is returned immediately.
+// If ctx is cancelled during a backoff sleep, the function returns ctx.Err().
+func (c *Client) DoWithRetry(ctx context.Context, makeReq func() (*http.Request, error)) (*http.Response, error) {
+	const maxRetries = 3
+	delay := retryDelay
+
+	for attempt := 0; ; attempt++ {
+		req, err := makeReq()
+		if err != nil {
+			return nil, fmt.Errorf("build request (attempt %d): %w", attempt+1, err)
+		}
+
+		resp, err := c.Do(req)
+		if err != nil {
+			// Network-level errors are not retried — they usually indicate the
+			// host is unreachable or the context was cancelled.
+			return nil, err
+		}
+
+		if attempt < maxRetries && retryableStatus(resp.StatusCode) {
+			resp.Body.Close()
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(delay):
+				delay *= 2
+				continue
+			}
+		}
+
+		return resp, nil
+	}
 }
