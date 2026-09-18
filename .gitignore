@@ -1,0 +1,15 @@
+# compiled binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+nameless
+
+# test output
+*.out
+
+# scan results (generated at runtime)
+result_*.json
+result_*.csv
+result_*.html
