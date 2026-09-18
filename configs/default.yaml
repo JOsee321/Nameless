@@ -1,0 +1,17 @@
+# Nameless default configuration
+# Override any of these via --config flag or environment variables.
+
+concurrency: 50
+timeout: 10s
+rate_limit: 5
+depth: 2
+output: ""
+format: json
+
+data:
+  sites_username: data/sites_username.json
+  sites_emailcheck: data/sites_emailcheck.json
+
+http:
+  max_idle_conns_per_host: 50
+  user_agent: "Mozilla/5.0 (compatible; Nameless/0.1; +https://github.com/nameless)"
