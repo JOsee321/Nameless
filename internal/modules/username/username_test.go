@@ -265,3 +265,39 @@ func TestMultipleSitesConcurrent(t *testing.T) {
 		t.Errorf("wrong site found: %q", results[0].Value)
 	}
 }
+
+func TestRequiresSessionSkip(t *testing.T) {
+	// Server must never be reached for a requires_session site.
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	sites := []username.SiteDefinition{{
+		Name:            "SessionSite",
+		URL:             srv.URL + "/{}",
+		URLMain:         srv.URL,
+		Detection:       username.Detection{Type: "status_code", PresentCode: 200},
+		Request:         username.RequestCfg{Method: "GET"},
+		RequiresSession: true,
+	}}
+
+	ctx := context.Background()
+	client, limiter, pool := newInfra(ctx)
+	defer pool.Close()
+
+	mod, _ := username.New(writeSites(t, sites), client, limiter, pool)
+
+	out := make(chan core.Entity, 10)
+	_ = mod.Run(ctx, "alice", out)
+	close(out)
+
+	if called {
+		t.Error("HTTP server was called despite requires_session=true")
+	}
+	if len(collect(out)) != 0 {
+		t.Error("expected no entities for requires_session site")
+	}
+}

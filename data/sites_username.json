@@ -3,360 +3,680 @@
     "name": "GitHub",
     "url": "https://github.com/{}",
     "url_main": "https://github.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "GitLab",
     "url": "https://gitlab.com/{}",
     "url_main": "https://gitlab.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9._-]{2,255}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Bitbucket",
     "url": "https://bitbucket.org/{}",
     "url_main": "https://bitbucket.org",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_.-]{1,256}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Reddit",
     "url": "https://www.reddit.com/user/{}",
     "url_main": "https://www.reddit.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{3,20}$",
     "rate_limit_override": 2,
-    "request": { "method": "GET", "headers": { "Accept": "text/html" } }
+    "request": {
+      "method": "GET",
+      "headers": {
+        "Accept": "text/html"
+      }
+    },
+    "requires_session": false
   },
   {
     "name": "Twitter / X",
     "url": "https://x.com/{}",
     "url_main": "https://x.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_]{1,15}$",
     "rate_limit_override": 1,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Instagram",
     "url": "https://www.instagram.com/{}/",
     "url_main": "https://www.instagram.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9._]{1,30}$",
     "rate_limit_override": 1,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": true
   },
   {
     "name": "TikTok",
     "url": "https://www.tiktok.com/@{}",
     "url_main": "https://www.tiktok.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9._]{2,24}$",
     "rate_limit_override": 1,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "YouTube",
     "url": "https://www.youtube.com/@{}",
     "url_main": "https://www.youtube.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_.-]{3,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "LinkedIn",
     "url": "https://www.linkedin.com/in/{}",
     "url_main": "https://www.linkedin.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9-]{3,100}$",
     "rate_limit_override": 1,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": true
   },
   {
     "name": "Medium",
     "url": "https://medium.com/@{}",
     "url_main": "https://medium.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_]{1,50}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Dev.to",
     "url": "https://dev.to/{}",
     "url_main": "https://dev.to",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_]{1,50}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "HackerNews",
     "url": "https://hacker-news.firebaseio.com/v0/user/{}.json",
     "url_main": "https://news.ycombinator.com",
-    "detection": { "type": "body_text", "found_pattern": "\"id\":\"{}\"" },
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"id\":\"{}\""
+    },
     "username_regex": "^[a-zA-Z0-9_-]{2,15}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Keybase",
     "url": "https://keybase.io/{}",
     "url_main": "https://keybase.io",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_]{2,16}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Mastodon (mastodon.social)",
     "url": "https://mastodon.social/@{}",
     "url_main": "https://mastodon.social",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_]{1,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Telegram",
     "url": "https://t.me/{}",
     "url_main": "https://t.me",
-    "detection": { "type": "body_text", "found_pattern": "tgme_page_title", "error_pattern": "tgme_page_description" },
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "tgme_page_title",
+      "error_pattern": "tgme_page_description"
+    },
     "username_regex": "^[a-zA-Z][a-zA-Z0-9_]{4,31}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Pinterest",
     "url": "https://www.pinterest.com/{}/",
     "url_main": "https://www.pinterest.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_]{3,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Twitch",
     "url": "https://www.twitch.tv/{}",
     "url_main": "https://www.twitch.tv",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_]{4,25}$",
     "rate_limit_override": 1,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Steam",
     "url": "https://steamcommunity.com/id/{}",
     "url_main": "https://steamcommunity.com",
-    "detection": { "type": "body_text", "error_pattern": "The specified profile could not be found" },
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "The specified profile could not be found"
+    },
     "username_regex": "^[a-zA-Z0-9_-]{2,32}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Pastebin",
     "url": "https://pastebin.com/u/{}",
     "url_main": "https://pastebin.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{3,20}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Gravatar",
     "url": "https://en.gravatar.com/{}",
     "url_main": "https://gravatar.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{1,64}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "About.me",
     "url": "https://about.me/{}",
     "url_main": "https://about.me",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_.]{1,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Flickr",
     "url": "https://www.flickr.com/people/{}",
     "url_main": "https://www.flickr.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9@_-]{1,64}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": true
   },
   {
     "name": "Vimeo",
     "url": "https://vimeo.com/{}",
     "url_main": "https://vimeo.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{1,60}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Soundcloud",
     "url": "https://soundcloud.com/{}",
     "url_main": "https://soundcloud.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{3,25}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Spotify",
     "url": "https://open.spotify.com/user/{}",
     "url_main": "https://open.spotify.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9._-]{2,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "DockerHub",
     "url": "https://hub.docker.com/u/{}",
     "url_main": "https://hub.docker.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{4,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "npm",
     "url": "https://www.npmjs.com/~{}",
     "url_main": "https://www.npmjs.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{1,214}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "PyPI",
     "url": "https://pypi.org/user/{}/",
     "url_main": "https://pypi.org",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9._-]{1,50}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "HackerOne",
     "url": "https://hackerone.com/{}",
     "url_main": "https://hackerone.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{3,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Bugcrowd",
     "url": "https://bugcrowd.com/{}",
     "url_main": "https://bugcrowd.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{3,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Tryhackme",
     "url": "https://tryhackme.com/p/{}",
     "url_main": "https://tryhackme.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9-]{3,25}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Codepen",
     "url": "https://codepen.io/{}",
     "url_main": "https://codepen.io",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{3,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Replit",
     "url": "https://replit.com/@{}",
     "url_main": "https://replit.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{2,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Dribbble",
     "url": "https://dribbble.com/{}",
     "url_main": "https://dribbble.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{2,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Behance",
     "url": "https://www.behance.net/{}",
     "url_main": "https://www.behance.net",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{2,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Leetcode",
     "url": "https://leetcode.com/{}",
     "url_main": "https://leetcode.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{3,25}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Codeforces",
     "url": "https://codeforces.com/profile/{}",
     "url_main": "https://codeforces.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 302 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 302
+    },
     "username_regex": "^[a-zA-Z0-9_-]{3,24}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "Goodreads",
     "url": "https://www.goodreads.com/{}",
     "url_main": "https://www.goodreads.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{2,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": true
   },
   {
     "name": "Strava",
     "url": "https://www.strava.com/athletes/{}",
     "url_main": "https://www.strava.com",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[0-9]+$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   },
   {
     "name": "SourceForge",
     "url": "https://sourceforge.net/u/{}/profile/",
     "url_main": "https://sourceforge.net",
-    "detection": { "type": "status_code", "present_code": 200, "absent_code": 404 },
+    "detection": {
+      "type": "status_code",
+      "present_code": 200,
+      "absent_code": 404
+    },
     "username_regex": "^[a-zA-Z0-9_-]{3,30}$",
     "rate_limit_override": 0,
-    "request": { "method": "GET", "headers": {} }
+    "request": {
+      "method": "GET",
+      "headers": {}
+    },
+    "requires_session": false
   }
 ]

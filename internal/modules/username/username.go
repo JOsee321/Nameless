@@ -57,6 +57,11 @@ type SiteDefinition struct {
 	UsernameRegex     string     `json:"username_regex"`      // pre-filter; empty = accept all
 	RateLimitOverride int        `json:"rate_limit_override"` // 0 = use global RPS
 	Request           RequestCfg `json:"request"`
+	// RequiresSession marks platforms that need an authenticated cookie/session
+	// to distinguish "user exists" from "login wall" responses.  Checks against
+	// these sites are skipped in v1 to avoid false positives; a warning is
+	// printed to stderr so the operator knows coverage was reduced.
+	RequiresSession bool `json:"requires_session"`
 
 	// compiled from UsernameRegex at load time; not in JSON
 	compiledRegex *regexp.Regexp
@@ -112,6 +117,14 @@ func (m *Module) Run(ctx context.Context, username string, out chan<- core.Entit
 
 	for i := range m.sites {
 		site := m.sites[i] // copy to avoid closure capture of loop variable
+
+		// Skip sites that require an authenticated session — without a valid
+		// cookie the response cannot be distinguished from a login redirect,
+		// leading to false positives or false negatives.
+		if site.RequiresSession {
+			fmt.Fprintf(os.Stderr, "[!] skipping %s: requires_session=true (not supported in v1)\n", site.Name)
+			continue
+		}
 
 		// Skip sites whose username format regex rejects this username.
 		if site.compiledRegex != nil && !site.compiledRegex.MatchString(username) {
