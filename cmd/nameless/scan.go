@@ -15,23 +15,26 @@ import (
 
 	"nameless/internal/config"
 	"nameless/internal/core"
+	"nameless/internal/modules/crawler"
 	"nameless/internal/modules/emailcheck"
 	"nameless/internal/modules/username"
 )
 
 // scan flags — values populated by cobra before RunE runs.
 var (
-	scanTarget      string
-	scanMode        string
-	scanConcurrency int
-	scanTimeout     string
-	scanRateLimit   int
-	scanProxy       string
-	scanOutput      string
-	scanFormat      string
-	scanNoCorrelate bool
-	scanConfig      string
-	scanDepth       int
+	scanTarget        string
+	scanMode          string
+	scanConcurrency   int
+	scanTimeout       string
+	scanRateLimit     int
+	scanProxy         string
+	scanOutput        string
+	scanFormat        string
+	scanNoCorrelate   bool
+	scanConfig        string
+	scanDepth         int
+	scanCrawlExternal bool // --crawl-external: follow links outside seed domain
+	scanIgnoreRobots  bool // --ignore-robots:  skip robots.txt enforcement
 )
 
 var scanCmd = &cobra.Command{
@@ -108,9 +111,19 @@ func runScan(cmd *cobra.Command, args []string) error {
 		return runUsernameMode(ctx, scanTarget, cfg, client, limiter, pool, agg, out)
 	case "emailcheck":
 		return runEmailcheckMode(ctx, scanTarget, cfg, client, limiter, pool, agg, out)
+	case "crawl":
+		opts := crawler.DefaultCrawlerOptions()
+		opts.MaxDepth = cfg.Depth
+		if cmd.Flags().Changed("crawl-external") {
+			opts.StayOnDomain = !scanCrawlExternal
+		}
+		if cmd.Flags().Changed("ignore-robots") {
+			opts.IgnoreRobots = scanIgnoreRobots
+		}
+		return runCrawlMode(ctx, scanTarget, cfg, client, limiter, pool, agg, out, opts)
 	default:
 		fmt.Fprintf(os.Stderr,
-			"mode %q not yet implemented — available modes: username, emailcheck\n", scanMode)
+			"mode %q not yet implemented — available modes: username, emailcheck, crawl\n", scanMode)
 		return nil
 	}
 }
@@ -207,10 +220,103 @@ func init() {
 	scanCmd.Flags().BoolVar(&scanNoCorrelate, "no-correlate", false, "disable correlation layer, run modules independently")
 	scanCmd.Flags().StringVar(&scanConfig, "config", "configs/default.yaml", "path to config file")
 	scanCmd.Flags().IntVar(&scanDepth, "depth", 2, "crawl depth for the crawler module")
+	scanCmd.Flags().BoolVar(&scanCrawlExternal, "crawl-external", false, "follow links to external domains during crawl")
+	scanCmd.Flags().BoolVar(&scanIgnoreRobots, "ignore-robots", false, "ignore robots.txt when crawling")
 
 	_ = scanCmd.MarkFlagRequired("target")
 
 	rootCmd.AddCommand(scanCmd)
+}
+
+// runCrawlMode executes the recursive web crawler pipeline.
+func runCrawlMode(
+	ctx context.Context,
+	target string,
+	cfg *config.Config,
+	client *core.Client,
+	limiter *core.RateLimiter,
+	pool *core.Pool,
+	agg *core.Aggregator,
+	out io.Writer,
+	opts crawler.CrawlerOptions,
+) error {
+	mod := crawler.New(client, limiter, pool, opts)
+
+	entityCh := make(chan core.Entity, cfg.Concurrency*2)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for e := range entityCh {
+			agg.Add(e)
+			// Stream high-value finds to stderr.
+			switch e.Type {
+			case core.EntityEmail:
+				fmt.Fprintf(os.Stderr, "[email]   %s\n", e.Value)
+			case core.EntitySecret:
+				fmt.Fprintf(os.Stderr, "[secret]  %-20s %s\n", e.Metadata["pattern"], e.Value)
+			case core.EntityEndpoint:
+				if e.Metadata["kind"] == "js_endpoint" {
+					fmt.Fprintf(os.Stderr, "[endpoint] %s (from %s)\n", e.Value, e.Metadata["source_url"])
+				}
+			}
+		}
+	}()
+
+	start := time.Now()
+	if err := mod.Run(ctx, target, entityCh); err != nil {
+		return fmt.Errorf("crawl: %w", err)
+	}
+	close(entityCh)
+	<-done
+
+	elapsed := time.Since(start)
+	entities := agg.All()
+
+	switch cfg.Format {
+	case "json":
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(entities); err != nil {
+			return fmt.Errorf("json encode: %w", err)
+		}
+	case "csv":
+		fmt.Fprintln(out, "id,type,value,source_module,kind,source_url,timestamp")
+		for _, e := range entities {
+			fmt.Fprintf(out, "%s,%s,%s,%s,%s,%s,%s\n",
+				e.ID, e.Type, e.Value, e.SourceModule,
+				e.Metadata["kind"], e.Metadata["source_url"],
+				e.Timestamp.Format(time.RFC3339))
+		}
+	default:
+		return fmt.Errorf("format %q not yet implemented", cfg.Format)
+	}
+
+	var (
+		nEmails    int
+		nSecrets   int
+		nEndpoints int
+		nLinks     int
+	)
+	for _, e := range entities {
+		switch e.Type {
+		case core.EntityEmail:
+			nEmails++
+		case core.EntitySecret:
+			nSecrets++
+		case core.EntityEndpoint:
+			if e.Metadata["kind"] == "js_endpoint" {
+				nEndpoints++
+			} else {
+				nLinks++
+			}
+		}
+	}
+	fmt.Fprintf(os.Stderr,
+		"\n[*] crawl complete in %s — links:%d emails:%d endpoints:%d secrets:%d\n",
+		elapsed.Round(time.Millisecond), nLinks, nEmails, nEndpoints, nSecrets)
+
+	return nil
 }
 
 // runEmailcheckMode executes the email registration check pipeline.
