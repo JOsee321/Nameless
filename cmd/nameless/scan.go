@@ -15,6 +15,7 @@ import (
 
 	"nameless/internal/config"
 	"nameless/internal/core"
+	"nameless/internal/modules/emailcheck"
 	"nameless/internal/modules/username"
 )
 
@@ -101,13 +102,15 @@ func runScan(cmd *cobra.Command, args []string) error {
 		out = f
 	}
 
-	// ── dispatch by mode ──────────────────────────────────────────────────────
+	// ── dispatch by mode ─────────────────────────────────────────────────────
 	switch scanMode {
 	case "username":
 		return runUsernameMode(ctx, scanTarget, cfg, client, limiter, pool, agg, out)
+	case "emailcheck":
+		return runEmailcheckMode(ctx, scanTarget, cfg, client, limiter, pool, agg, out)
 	default:
 		fmt.Fprintf(os.Stderr,
-			"mode %q not yet implemented — only 'username' is available in this build\n", scanMode)
+			"mode %q not yet implemented — available modes: username, emailcheck\n", scanMode)
 		return nil
 	}
 }
@@ -208,4 +211,71 @@ func init() {
 	_ = scanCmd.MarkFlagRequired("target")
 
 	rootCmd.AddCommand(scanCmd)
+}
+
+// runEmailcheckMode executes the email registration check pipeline.
+func runEmailcheckMode(
+	ctx context.Context,
+	target string,
+	cfg *config.Config,
+	client *core.Client,
+	limiter *core.RateLimiter,
+	pool *core.Pool,
+	agg *core.Aggregator,
+	out io.Writer,
+) error {
+	mod, err := emailcheck.New(cfg.Data.SitesEmailcheck, client, limiter, pool)
+	if err != nil {
+		return fmt.Errorf("emailcheck module init: %w", err)
+	}
+
+	entityCh := make(chan core.Entity, cfg.Concurrency*2)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for e := range entityCh {
+			agg.Add(e)
+			if e.Metadata["status"] == "found" {
+				fmt.Fprintf(os.Stderr, "[+] %-30s %s\n", e.Value, e.Metadata["url"])
+			}
+		}
+	}()
+
+	start := time.Now()
+	if err := mod.Run(ctx, target, entityCh); err != nil {
+		return fmt.Errorf("emailcheck scan: %w", err)
+	}
+	close(entityCh)
+	<-done
+
+	elapsed := time.Since(start)
+	entities := agg.All()
+
+	switch cfg.Format {
+	case "json":
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(entities); err != nil {
+			return fmt.Errorf("json encode: %w", err)
+		}
+	case "csv":
+		fmt.Fprintln(out, "id,type,value,source_module,url,timestamp")
+		for _, e := range entities {
+			if e.Metadata["status"] != "found" {
+				continue
+			}
+			fmt.Fprintf(out, "%s,%s,%s,%s,%s,%s\n",
+				e.ID, e.Type, e.Value, e.SourceModule,
+				e.Metadata["url"], e.Timestamp.Format(time.RFC3339))
+		}
+	default:
+		return fmt.Errorf("format %q not yet implemented", cfg.Format)
+	}
+
+	fmt.Fprintf(os.Stderr,
+		"\n[*] emailcheck scan complete: %d sites checked, %d found in %s\n",
+		len(entities), countFound(entities), elapsed.Round(time.Millisecond))
+
+	return nil
 }
