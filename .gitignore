@@ -5,11 +5,32 @@
 *.so
 *.dylib
 nameless
+nameless.exe
 
-# test output
+# test output and coverage profiles
 *.out
+*.test
+coverage.html
 
-# scan results (generated at runtime)
-result_*.json
-result_*.csv
-result_*.html
+# scan results — any JSON/CSV/HTML file at repo root is assumed runtime output.
+# Use subdirectories (e.g. testdata/) if you need to commit sample files.
+/*.json
+/*.csv
+/*.html
+/*.txt
+
+# keep data/ and configs/ definitions — they are source-controlled
+!data/
+!data/**
+!configs/
+!configs/**
+
+# editor/IDE artifacts
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS artifacts
+Thumbs.db
+.DS_Store
