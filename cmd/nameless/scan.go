@@ -2,9 +2,20 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
+
+	"nameless/internal/config"
+	"nameless/internal/core"
+	"nameless/internal/modules/username"
 )
 
 // scan flags — values populated by cobra before RunE runs.
@@ -31,15 +42,154 @@ Examples:
   nameless scan --target example.com
   nameless scan --target johndoe --mode username
   nameless scan --target user@example.com --mode emailcheck --format csv`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if scanTarget == "" {
-			return fmt.Errorf("--target is required")
+	RunE: runScan,
+}
+
+func runScan(cmd *cobra.Command, args []string) error {
+	// ── load config ───────────────────────────────────────────────────────────
+	cfg, err := config.Load(scanConfig)
+	if err != nil {
+		return fmt.Errorf("config: %w", err)
+	}
+
+	// CLI flags override config file values.
+	if cmd.Flags().Changed("concurrency") {
+		cfg.Concurrency = scanConcurrency
+	}
+	if cmd.Flags().Changed("rate-limit") {
+		cfg.RateLimit = scanRateLimit
+	}
+	if cmd.Flags().Changed("timeout") {
+		d, err := time.ParseDuration(scanTimeout)
+		if err != nil {
+			return fmt.Errorf("invalid --timeout %q: %w", scanTimeout, err)
 		}
-		// Execution logic will be wired in later phases.
-		fmt.Printf("scan: target=%s mode=%s concurrency=%d timeout=%s\n",
-			scanTarget, scanMode, scanConcurrency, scanTimeout)
+		cfg.Timeout = config.Duration{Duration: d}
+	}
+	if cmd.Flags().Changed("format") {
+		cfg.Format = scanFormat
+	}
+	if cmd.Flags().Changed("output") {
+		cfg.Output = scanOutput
+	}
+
+	// ── context with graceful shutdown on SIGINT/SIGTERM ──────────────────────
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	// ── shared infrastructure ─────────────────────────────────────────────────
+	clientOpts := core.DefaultClientOptions()
+	clientOpts.Timeout = cfg.Timeout.Duration
+	clientOpts.MaxIdleConnsPerHost = cfg.HTTP.MaxIdleConnsPerHost
+	clientOpts.UserAgent = cfg.HTTP.UserAgent
+
+	client := core.NewClient(clientOpts)
+	limiter := core.NewRateLimiter(cfg.RateLimit)
+	pool := core.NewPool(ctx, cfg.Concurrency)
+	defer pool.Close()
+
+	agg := core.NewAggregator()
+
+	// ── output writer ─────────────────────────────────────────────────────────
+	var out io.Writer = os.Stdout
+	if cfg.Output != "" {
+		f, err := os.Create(cfg.Output)
+		if err != nil {
+			return fmt.Errorf("open output file: %w", err)
+		}
+		defer f.Close()
+		out = f
+	}
+
+	// ── dispatch by mode ──────────────────────────────────────────────────────
+	switch scanMode {
+	case "username":
+		return runUsernameMode(ctx, scanTarget, cfg, client, limiter, pool, agg, out)
+	default:
+		fmt.Fprintf(os.Stderr,
+			"mode %q not yet implemented — only 'username' is available in this build\n", scanMode)
 		return nil
-	},
+	}
+}
+
+// runUsernameMode executes the username enumeration pipeline and writes results.
+func runUsernameMode(
+	ctx context.Context,
+	target string,
+	cfg *config.Config,
+	client *core.Client,
+	limiter *core.RateLimiter,
+	pool *core.Pool,
+	agg *core.Aggregator,
+	out io.Writer,
+) error {
+	mod, err := username.New(cfg.Data.SitesUsername, client, limiter, pool)
+	if err != nil {
+		return fmt.Errorf("username module init: %w", err)
+	}
+
+	entityCh := make(chan core.Entity, cfg.Concurrency*2)
+
+	// Collect entities and stream progress to stderr.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for e := range entityCh {
+			agg.Add(e)
+			if e.Metadata["status"] == "found" {
+				fmt.Fprintf(os.Stderr, "[+] %-25s %s\n", e.Value, e.Metadata["url"])
+			}
+		}
+	}()
+
+	start := time.Now()
+	if err := mod.Run(ctx, target, entityCh); err != nil {
+		return fmt.Errorf("username scan: %w", err)
+	}
+	close(entityCh)
+	<-done
+
+	elapsed := time.Since(start)
+	entities := agg.All()
+
+	// ── write output ──────────────────────────────────────────────────────────
+	switch cfg.Format {
+	case "json":
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(entities); err != nil {
+			return fmt.Errorf("json encode: %w", err)
+		}
+	case "csv":
+		fmt.Fprintln(out, "id,type,value,source_module,url,timestamp")
+		for _, e := range entities {
+			if e.Metadata["status"] != "found" {
+				continue
+			}
+			fmt.Fprintf(out, "%s,%s,%s,%s,%s,%s\n",
+				e.ID, e.Type, e.Value, e.SourceModule,
+				e.Metadata["url"], e.Timestamp.Format(time.RFC3339))
+		}
+	default:
+		return fmt.Errorf("format %q not yet implemented", cfg.Format)
+	}
+
+	nFound := countFound(entities)
+	fmt.Fprintf(os.Stderr,
+		"\n[*] username scan complete: %d sites checked, %d found in %s\n",
+		len(entities), nFound, elapsed.Round(time.Millisecond))
+
+	return nil
+}
+
+func countFound(entities []core.Entity) int {
+	n := 0
+	for _, e := range entities {
+		if e.Metadata["status"] == "found" {
+			n++
+		}
+	}
+	return n
 }
 
 func init() {
