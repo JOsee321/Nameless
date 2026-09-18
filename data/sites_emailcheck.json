@@ -1,1 +1,570 @@
-[]
+[
+  {
+    "name": "Duolingo",
+    "url": "https://www.duolingo.com/2017-06-30/users",
+    "url_main": "https://www.duolingo.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"users\":[{",
+      "error_pattern": "\"users\":[]"
+    },
+    "request": {
+      "method": "GET",
+      "params": { "email": "{}", "fields": "email" },
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Firefox Accounts",
+    "url": "https://api.accounts.firefox.com/v1/account/status",
+    "url_main": "https://accounts.firefox.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"exists\":true",
+      "error_pattern": "\"exists\":false"
+    },
+    "request": {
+      "method": "POST",
+      "body": "{\"email\":\"{}\"}",
+      "content_type": "application/json",
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Proton Mail",
+    "url": "https://account.proton.me/api/users/available",
+    "url_main": "https://proton.me",
+    "detection": {
+      "type": "status_code",
+      "present_code": 422,
+      "absent_code": 200
+    },
+    "request": {
+      "method": "GET",
+      "params": { "Name": "{}" },
+      "headers": { "x-pm-appversion": "web-account@5.0.999.0" }
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Adobe",
+    "url": "https://auth.services.adobe.com/en_US/index.html",
+    "url_main": "https://adobe.com",
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "\"errorCode\":\"NOT_FOUND\""
+    },
+    "request": {
+      "method": "GET",
+      "params": { "client_id": "HomePage3", "scope": "AdobeID,openid", "redirect_uri": "https://www.adobe.com/", "from_ims": "true", "reauth": "force" },
+      "headers": {}
+    },
+    "requires_session": true,
+    "email_regex": ""
+  },
+  {
+    "name": "Airbnb",
+    "url": "https://www.airbnb.com/api/v2/profiles/me",
+    "url_main": "https://www.airbnb.com",
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "\"status\":\"AVAILABLE\""
+    },
+    "request": {
+      "method": "POST",
+      "body": "email={}&locale=en",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": { "X-Airbnb-API-Key": "d306zoyjsyarp7ifhu67rjxn52tv0t20" }
+    },
+    "requires_session": true
+  },
+  {
+    "name": "Spotify",
+    "url": "https://spclient.wg.spotify.com/signup/public/v1/account",
+    "url_main": "https://www.spotify.com",
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "\"status\":20",
+      "found_pattern": "\"status\":1"
+    },
+    "request": {
+      "method": "GET",
+      "params": { "validate": "1", "email": "{}" },
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "GitHub",
+    "url": "https://github.com/signup_check/email",
+    "url_main": "https://github.com",
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "Email is already taken",
+      "found_pattern": ""
+    },
+    "request": {
+      "method": "POST",
+      "body": "value={}",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": { "X-Requested-With": "XMLHttpRequest" }
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Tumblr",
+    "url": "https://www.tumblr.com/api/v2/meh",
+    "url_main": "https://www.tumblr.com",
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "\"email_address\":\"{}\"",
+      "found_pattern": ""
+    },
+    "request": {
+      "method": "POST",
+      "body": "action=login&email={}&redirect_to=&form_key=",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": true
+  },
+  {
+    "name": "WordPress.com",
+    "url": "https://public-api.wordpress.com/rest/v1.1/users/email-check",
+    "url_main": "https://wordpress.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"exists\":1",
+      "error_pattern": "\"exists\":0"
+    },
+    "request": {
+      "method": "GET",
+      "params": { "email": "{}", "http_envelope": "true" },
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Lastpass",
+    "url": "https://lastpass.com/create_account.php",
+    "url_main": "https://lastpass.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"email_used\":1"
+    },
+    "request": {
+      "method": "POST",
+      "body": "email={}&masterpassword=tmp&createflag=1",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Snapchat",
+    "url": "https://accounts.snapchat.com/accounts/get_username_suggestions",
+    "url_main": "https://www.snapchat.com",
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "INVALID_EMAIL"
+    },
+    "request": {
+      "method": "POST",
+      "body": "{\"email\":\"{}\"}",
+      "content_type": "application/json",
+      "headers": {}
+    },
+    "requires_session": true
+  },
+  {
+    "name": "Dropbox",
+    "url": "https://www.dropbox.com/register",
+    "url_main": "https://www.dropbox.com",
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "There's already an account associated with this email"
+    },
+    "request": {
+      "method": "POST",
+      "body": "email={}&login_email={}&first_name=Test&last_name=Test&password=temppassword",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": true
+  },
+  {
+    "name": "HubSpot",
+    "url": "https://app.hubspot.com/login-verify/check-email",
+    "url_main": "https://hubspot.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"portalId\"",
+      "error_pattern": "no accounts associated"
+    },
+    "request": {
+      "method": "POST",
+      "body": "{\"email\":\"{}\"}",
+      "content_type": "application/json",
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Zoom",
+    "url": "https://zoom.us/forgot_password",
+    "url_main": "https://zoom.us",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "We've sent an email",
+      "error_pattern": "This email address is not registered"
+    },
+    "request": {
+      "method": "POST",
+      "body": "email={}",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Patreon",
+    "url": "https://www.patreon.com/api/auth/register/validate",
+    "url_main": "https://www.patreon.com",
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "\"email\":\"Email address is already in use\""
+    },
+    "request": {
+      "method": "POST",
+      "body": "{\"data\":{\"type\":\"user\",\"attributes\":{\"email\":\"{}\",\"full_name\":\"test\",\"password\":\"test1234!\"}}}",
+      "content_type": "application/vnd.api+json",
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Archive.org",
+    "url": "https://archive.org/account/login",
+    "url_main": "https://archive.org",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"loggedin\":true",
+      "error_pattern": "\"loggedin\":false"
+    },
+    "request": {
+      "method": "POST",
+      "body": "username={}&password=test",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Shopify",
+    "url": "https://www.shopify.com/join/email",
+    "url_main": "https://www.shopify.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"exists\":true"
+    },
+    "request": {
+      "method": "GET",
+      "params": { "email": "{}" },
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Freelancer",
+    "url": "https://www.freelancer.com/api/users/0.1/users",
+    "url_main": "https://www.freelancer.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"total_count\":1"
+    },
+    "request": {
+      "method": "GET",
+      "params": { "query": "{}", "search_fields": "email" },
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Kickstarter",
+    "url": "https://www.kickstarter.com/signup/check_email",
+    "url_main": "https://www.kickstarter.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"taken\":true",
+      "error_pattern": "\"taken\":false"
+    },
+    "request": {
+      "method": "GET",
+      "params": { "email": "{}" },
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Mailchimp",
+    "url": "https://login.mailchimp.com/",
+    "url_main": "https://mailchimp.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "There is already a Mailchimp account associated with this email",
+      "error_pattern": ""
+    },
+    "request": {
+      "method": "POST",
+      "body": "email={}&referral=&_=",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": true
+  },
+  {
+    "name": "Eventbrite",
+    "url": "https://www.eventbrite.com/api/v3/users/me/",
+    "url_main": "https://www.eventbrite.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"email\":\"{}\""
+    },
+    "request": {
+      "method": "POST",
+      "body": "email={}",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": true
+  },
+  {
+    "name": "Envato",
+    "url": "https://account.envato.com/sign_in",
+    "url_main": "https://envato.com",
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "Invalid email or password"
+    },
+    "request": {
+      "method": "POST",
+      "body": "utf8=%E2%9C%93&authenticity_token=&login%5Bemail%5D={}&login%5Bpassword%5D=invalidpassword&commit=Sign+In",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": true
+  },
+  {
+    "name": "Discord",
+    "url": "https://discordapp.com/api/v9/auth/register",
+    "url_main": "https://discord.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"email\":[\"Email address already registered\""
+    },
+    "request": {
+      "method": "POST",
+      "body": "{\"username\":\"testuser\",\"email\":\"{}\",\"password\":\"testpassword123!\",\"date_of_birth\":\"1990-01-01\",\"consent\":true}",
+      "content_type": "application/json",
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Quora",
+    "url": "https://www.quora.com/",
+    "url_main": "https://www.quora.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"email_in_use\":true"
+    },
+    "request": {
+      "method": "POST",
+      "body": "email={}",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": true
+  },
+  {
+    "name": "Coursera",
+    "url": "https://api.coursera.org/api/loginAttempts.v1",
+    "url_main": "https://www.coursera.org",
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "\"message\":\"No user found\""
+    },
+    "request": {
+      "method": "POST",
+      "body": "{\"email\":\"{}\",\"password\":\"invalidpassword\"}",
+      "content_type": "application/json",
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Udemy",
+    "url": "https://www.udemy.com/join/signup-popup/",
+    "url_main": "https://www.udemy.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"email\":[\"Email is already taken\""
+    },
+    "request": {
+      "method": "POST",
+      "body": "email={}&fullname=Test+User&password=testpassword123",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Chess.com",
+    "url": "https://www.chess.com/callback/user/email/verify",
+    "url_main": "https://www.chess.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"taken\":true",
+      "error_pattern": "\"taken\":false"
+    },
+    "request": {
+      "method": "GET",
+      "params": { "email": "{}" },
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Duolingo Plus",
+    "url": "https://www.duolingo.com/2017-06-30/users",
+    "url_main": "https://www.duolingo.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"totalUsers\":1",
+      "error_pattern": "\"totalUsers\":0"
+    },
+    "request": {
+      "method": "GET",
+      "params": { "email": "{}" },
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Trello",
+    "url": "https://trello.com/1/authentication",
+    "url_main": "https://trello.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"oneTimeMessagesDismissed\""
+    },
+    "request": {
+      "method": "POST",
+      "body": "email={}&password=invalidpassword",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": true
+  },
+  {
+    "name": "Strava",
+    "url": "https://www.strava.com/api/v3/athletes",
+    "url_main": "https://www.strava.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"resource_state\""
+    },
+    "request": {
+      "method": "POST",
+      "body": "email={}&password=invalidpassword",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": true
+  },
+  {
+    "name": "Academia.edu",
+    "url": "https://www.academia.edu/",
+    "url_main": "https://www.academia.edu",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "sign_in_email",
+      "error_pattern": ""
+    },
+    "request": {
+      "method": "POST",
+      "body": "email={}&password=invalidpassword",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": true
+  },
+  {
+    "name": "Xing",
+    "url": "https://www.xing.com/login",
+    "url_main": "https://www.xing.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "\"success\":false,\"reason\":\"WRONG_PASSWORD\""
+    },
+    "request": {
+      "method": "POST",
+      "body": "login_form%5Bemail%5D={}&login_form%5Bpassword%5D=invalidpassword",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Weibo",
+    "url": "https://passport.weibo.cn/sso/login",
+    "url_main": "https://weibo.com",
+    "detection": {
+      "type": "body_text",
+      "error_pattern": "\"retcode\":50011015"
+    },
+    "request": {
+      "method": "POST",
+      "body": "username={}&password=invalidpassword&savestate=1",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": false
+  },
+  {
+    "name": "Gitlab",
+    "url": "https://gitlab.com/users/sign_in",
+    "url_main": "https://gitlab.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "Invalid Login or password",
+      "error_pattern": "Your account is locked"
+    },
+    "request": {
+      "method": "POST",
+      "body": "user%5Blogin%5D={}&user%5Bpassword%5D=invalidpassword",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": true
+  },
+  {
+    "name": "Basecamp",
+    "url": "https://launchpad.37signals.com/sessions/new",
+    "url_main": "https://basecamp.com",
+    "detection": {
+      "type": "body_text",
+      "found_pattern": "That password is incorrect",
+      "error_pattern": "No account for this email"
+    },
+    "request": {
+      "method": "POST",
+      "body": "username={}&password=invalidpassword",
+      "content_type": "application/x-www-form-urlencoded",
+      "headers": {}
+    },
+    "requires_session": false
+  }
+]
