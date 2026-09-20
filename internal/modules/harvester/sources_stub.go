@@ -1,0 +1,97 @@
+package harvester
+
+import (
+	"context"
+
+	"nameless/internal/core"
+)
+
+// crtshSource queries the crt.sh certificate transparency JSON API.
+// Endpoint: https://crt.sh/?q=%.{domain}&output=json
+// Response: JSON array of certificate records containing "name_value" fields.
+// Implementation: harvester_crtsh.go
+type crtshSource struct {
+	client  *core.Client
+	limiter *core.RateLimiter
+}
+
+func NewCrtshSource(client *core.Client, limiter *core.RateLimiter) Source {
+	return &crtshSource{client: client, limiter: limiter}
+}
+
+func (s *crtshSource) Name() string { return "crt.sh" }
+
+func (s *crtshSource) Query(ctx context.Context, domain string, out chan<- core.Entity) error {
+	panic("crt.sh source not yet implemented — see harvester_crtsh.go")
+}
+
+// hackertargetSource queries the HackerTarget passive DNS text API.
+// Endpoint: https://api.hackertarget.com/hostsearch/?q={domain}
+// Response: newline-separated "subdomain,ip" pairs.
+type hackertargetSource struct {
+	client  *core.Client
+	limiter *core.RateLimiter
+}
+
+func NewHackerTargetSource(client *core.Client, limiter *core.RateLimiter) Source {
+	return &hackertargetSource{client: client, limiter: limiter}
+}
+
+func (s *hackertargetSource) Name() string { return "hackertarget" }
+
+func (s *hackertargetSource) Query(ctx context.Context, domain string, out chan<- core.Entity) error {
+	panic("hackertarget source not yet implemented")
+}
+
+// anubisSource queries the AnubisDB subdomain aggregator.
+// Endpoint: https://jonlu.ca/anubis/subdomains/{domain}
+// Response: JSON array of subdomain strings.
+type anubisSource struct {
+	client  *core.Client
+	limiter *core.RateLimiter
+}
+
+func NewAnubisSource(client *core.Client, limiter *core.RateLimiter) Source {
+	return &anubisSource{client: client, limiter: limiter}
+}
+
+func (s *anubisSource) Name() string { return "anubis" }
+
+func (s *anubisSource) Query(ctx context.Context, domain string, out chan<- core.Entity) error {
+	panic("anubis source not yet implemented")
+}
+
+// urlscanSource queries URLScan.io for recorded scans containing the domain.
+// Endpoint: https://urlscan.io/api/v1/search/?q=domain:{domain}&size=100
+// Response: JSON with results[].page.domain field.
+type urlscanSource struct {
+	client  *core.Client
+	limiter *core.RateLimiter
+}
+
+func NewURLScanSource(client *core.Client, limiter *core.RateLimiter) Source {
+	return &urlscanSource{client: client, limiter: limiter}
+}
+
+func (s *urlscanSource) Name() string { return "urlscan" }
+
+func (s *urlscanSource) Query(ctx context.Context, domain string, out chan<- core.Entity) error {
+	panic("urlscan source not yet implemented")
+}
+
+// dnsBruteSource resolves common subdomain names against the target domain
+// using the Go standard library net.LookupHost.
+//
+// NOTE: This source does NOT use core.Client or core.RateLimiter because DNS
+// resolution is not HTTP — it goes through the OS resolver / system DNS.
+// Rate limiting is implicitly handled by goroutine concurrency limits in core.Pool.
+// Context cancellation is honoured via a context-aware lookup helper.
+type dnsBruteSource struct{}
+
+func NewDNSBruteSource() Source { return &dnsBruteSource{} }
+
+func (s *dnsBruteSource) Name() string { return "dns_brute" }
+
+func (s *dnsBruteSource) Query(ctx context.Context, domain string, out chan<- core.Entity) error {
+	panic("dns_brute source not yet implemented")
+}
