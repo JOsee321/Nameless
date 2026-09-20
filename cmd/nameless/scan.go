@@ -33,6 +33,7 @@ var (
 	scanNoCorrelate   bool
 	scanConfig        string
 	scanDepth         int
+	scanMaxPages      int  // --max-pages: hard ceiling on pages fetched per crawl
 	scanCrawlExternal bool // --crawl-external: follow links outside seed domain
 	scanIgnoreRobots  bool // --ignore-robots:  skip robots.txt enforcement
 )
@@ -114,6 +115,12 @@ func runScan(cmd *cobra.Command, args []string) error {
 	case "crawl":
 		opts := crawler.DefaultCrawlerOptions()
 		opts.MaxDepth = cfg.Depth
+		if cmd.Flags().Changed("max-pages") {
+			if scanMaxPages <= 0 {
+				return fmt.Errorf("--max-pages must be >= 1, got %d", scanMaxPages)
+			}
+			opts.MaxPages = scanMaxPages
+		}
 		if cmd.Flags().Changed("crawl-external") {
 			opts.StayOnDomain = !scanCrawlExternal
 		}
@@ -220,6 +227,7 @@ func init() {
 	scanCmd.Flags().BoolVar(&scanNoCorrelate, "no-correlate", false, "disable correlation layer, run modules independently")
 	scanCmd.Flags().StringVar(&scanConfig, "config", "configs/default.yaml", "path to config file")
 	scanCmd.Flags().IntVar(&scanDepth, "depth", 2, "crawl depth for the crawler module")
+	scanCmd.Flags().IntVar(&scanMaxPages, "max-pages", 200, "maximum pages fetched per crawl (must be >= 1)")
 	scanCmd.Flags().BoolVar(&scanCrawlExternal, "crawl-external", false, "follow links to external domains during crawl")
 	scanCmd.Flags().BoolVar(&scanIgnoreRobots, "ignore-robots", false, "ignore robots.txt when crawling")
 
