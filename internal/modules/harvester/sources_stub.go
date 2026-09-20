@@ -6,24 +6,6 @@ import (
 	"nameless/internal/core"
 )
 
-// crtshSource queries the crt.sh certificate transparency JSON API.
-// Endpoint: https://crt.sh/?q=%.{domain}&output=json
-// Response: JSON array of certificate records containing "name_value" fields.
-// Implementation: harvester_crtsh.go
-type crtshSource struct {
-	client  *core.Client
-	limiter *core.RateLimiter
-}
-
-func NewCrtshSource(client *core.Client, limiter *core.RateLimiter) Source {
-	return &crtshSource{client: client, limiter: limiter}
-}
-
-func (s *crtshSource) Name() string { return "crt.sh" }
-
-func (s *crtshSource) Query(ctx context.Context, domain string, out chan<- core.Entity) error {
-	panic("crt.sh source not yet implemented — see harvester_crtsh.go")
-}
 
 // hackertargetSource queries the HackerTarget passive DNS text API.
 // Endpoint: https://api.hackertarget.com/hostsearch/?q={domain}
