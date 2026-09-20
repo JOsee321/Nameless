@@ -6,19 +6,16 @@ import (
 	"nameless/internal/core"
 )
 
-// dnsBruteSource resolves common subdomain names against the target domain
-// using the Go standard library net.LookupHost.
-//
-// NOTE: This source does NOT use core.Client or core.RateLimiter because DNS
-// resolution is not HTTP — it goes through the OS resolver / system DNS.
-// Rate limiting is implicitly handled by goroutine concurrency limits in core.Pool.
-// Context cancellation is honoured via net.DefaultResolver.LookupHost with ctx.
-type dnsBruteSource struct{}
+// sources_stub.go is now empty — all sources have real implementations.
+// The file is kept as a placeholder in case temporary stubs are needed
+// during incremental development.
 
-func NewDNSBruteSource() Source { return &dnsBruteSource{} }
+// Ensure the package compiles even if all sources are fully implemented.
+var _ Source = (*dummySource)(nil)
 
-func (s *dnsBruteSource) Name() string { return "dns_brute" }
+type dummySource struct{}
 
-func (s *dnsBruteSource) Query(ctx context.Context, domain string, out chan<- core.Entity) error {
-	panic("dns_brute source not yet implemented — see source_dnsbrute.go")
+func (d *dummySource) Name() string { return "" }
+func (d *dummySource) Query(_ context.Context, _ string, _ chan<- core.Entity) error {
+	return nil
 }
