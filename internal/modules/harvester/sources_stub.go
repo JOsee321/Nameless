@@ -7,23 +7,7 @@ import (
 )
 
 
-// hackertargetSource queries the HackerTarget passive DNS text API.
-// Endpoint: https://api.hackertarget.com/hostsearch/?q={domain}
-// Response: newline-separated "subdomain,ip" pairs.
-type hackertargetSource struct {
-	client  *core.Client
-	limiter *core.RateLimiter
-}
 
-func NewHackerTargetSource(client *core.Client, limiter *core.RateLimiter) Source {
-	return &hackertargetSource{client: client, limiter: limiter}
-}
-
-func (s *hackertargetSource) Name() string { return "hackertarget" }
-
-func (s *hackertargetSource) Query(ctx context.Context, domain string, out chan<- core.Entity) error {
-	panic("hackertarget source not yet implemented")
-}
 
 // anubisSource queries the AnubisDB subdomain aggregator.
 // Endpoint: https://jonlu.ca/anubis/subdomains/{domain}
