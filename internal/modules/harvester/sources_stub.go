@@ -9,23 +9,7 @@ import (
 
 
 
-// anubisSource queries the AnubisDB subdomain aggregator.
-// Endpoint: https://jonlu.ca/anubis/subdomains/{domain}
-// Response: JSON array of subdomain strings.
-type anubisSource struct {
-	client  *core.Client
-	limiter *core.RateLimiter
-}
 
-func NewAnubisSource(client *core.Client, limiter *core.RateLimiter) Source {
-	return &anubisSource{client: client, limiter: limiter}
-}
-
-func (s *anubisSource) Name() string { return "anubis" }
-
-func (s *anubisSource) Query(ctx context.Context, domain string, out chan<- core.Entity) error {
-	panic("anubis source not yet implemented")
-}
 
 // urlscanSource queries URLScan.io for recorded scans containing the domain.
 // Endpoint: https://urlscan.io/api/v1/search/?q=domain:{domain}&size=100
