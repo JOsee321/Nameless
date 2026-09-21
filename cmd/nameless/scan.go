@@ -17,6 +17,7 @@ import (
 	"nameless/internal/core"
 	"nameless/internal/modules/crawler"
 	"nameless/internal/modules/emailcheck"
+	"nameless/internal/modules/harvester"
 	"nameless/internal/modules/username"
 )
 
@@ -128,9 +129,11 @@ func runScan(cmd *cobra.Command, args []string) error {
 			opts.IgnoreRobots = scanIgnoreRobots
 		}
 		return runCrawlMode(ctx, scanTarget, cfg, client, limiter, pool, agg, out, opts)
+	case "harvester":
+		return runHarvesterMode(ctx, scanTarget, cfg, client, limiter, pool, agg, out)
 	default:
 		fmt.Fprintf(os.Stderr,
-			"mode %q not yet implemented — available modes: username, emailcheck, crawl\n", scanMode)
+			"mode %q not yet implemented — available modes: username, emailcheck, crawl, harvester\n", scanMode)
 		return nil
 	}
 }
@@ -390,6 +393,83 @@ func runEmailcheckMode(
 	fmt.Fprintf(os.Stderr,
 		"\n[*] emailcheck scan complete: %d sites checked, %d found in %s\n",
 		len(entities), countFound(entities), elapsed.Round(time.Millisecond))
+
+	return nil
+}
+
+// runHarvesterMode executes the passive subdomain/email harvesting pipeline.
+// Sources run in parallel via the shared pool; per-source failures are logged
+// to stderr and do not abort the scan.
+func runHarvesterMode(
+	ctx context.Context,
+	target string,
+	cfg *config.Config,
+	client *core.Client,
+	limiter *core.RateLimiter,
+	pool *core.Pool,
+	agg *core.Aggregator,
+	out io.Writer,
+) error {
+	mod := harvester.NewDefaultModule(client, limiter, pool)
+
+	entityCh := make(chan core.Entity, cfg.Concurrency*2)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for e := range entityCh {
+			agg.Add(e)
+			switch e.Type {
+			case core.EntitySubdomain:
+				fmt.Fprintf(os.Stderr, "[subdomain] %s (via %s)\n",
+					e.Value, e.Metadata["source"])
+			case core.EntityEmail:
+				fmt.Fprintf(os.Stderr, "[email]     %s (via %s)\n",
+					e.Value, e.Metadata["source"])
+			}
+		}
+	}()
+
+	start := time.Now()
+	if err := mod.Run(ctx, target, entityCh); err != nil {
+		return fmt.Errorf("harvester: %w", err)
+	}
+	close(entityCh)
+	<-done
+
+	elapsed := time.Since(start)
+	entities := agg.All()
+
+	switch cfg.Format {
+	case "json":
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(entities); err != nil {
+			return fmt.Errorf("json encode: %w", err)
+		}
+	case "csv":
+		fmt.Fprintln(out, "id,type,value,source_module,source,timestamp")
+		for _, e := range entities {
+			fmt.Fprintf(out, "%s,%s,%s,%s,%s,%s\n",
+				e.ID, e.Type, e.Value, e.SourceModule,
+				e.Metadata["source"], e.Timestamp.Format(time.RFC3339))
+		}
+	default:
+		return fmt.Errorf("format %q not yet implemented", cfg.Format)
+	}
+
+	var nSubdomains, nEmails int
+	for _, e := range entities {
+		switch e.Type {
+		case core.EntitySubdomain:
+			nSubdomains++
+		case core.EntityEmail:
+			nEmails++
+		}
+	}
+	fmt.Fprintf(os.Stderr,
+		"\n[*] harvester complete in %s — subdomains:%d emails:%d\n",
+		elapsed.Round(time.Millisecond), nSubdomains, nEmails)
 
 	return nil
 }
