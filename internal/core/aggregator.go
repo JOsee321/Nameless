@@ -103,3 +103,25 @@ func (a *Aggregator) Len() int {
 	defer a.mu.RUnlock()
 	return len(a.entities)
 }
+
+// ByType returns all entities of the given type. The returned slice is a
+// snapshot; mutations to it do not affect the Aggregator.
+func (a *Aggregator) ByType(t EntityType) []Entity {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	var out []Entity
+	for _, e := range a.entities {
+		if e.Type == t {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+// Has reports whether an entity with the given type and value has been recorded.
+func (a *Aggregator) Has(t EntityType, value string) bool {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	_, ok := a.entities[entityID(t, value)]
+	return ok
+}
