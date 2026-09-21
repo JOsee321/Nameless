@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"nameless/internal/core"
+	"nameless/internal/modules/crawler"
 )
 
 // genericLocalParts is the set of email local-parts that are too common to be
@@ -127,4 +128,86 @@ func IsGenericLocalPart(local string) bool {
 // Exported for testing.
 func IsValidLocalPart(local string) bool {
 	return validLocalPartRe.MatchString(local)
+}
+
+// ruleCMaxSubdomains is the hard cap on how many subdomains Rule C will re-crawl.
+// This prevents scope explosion when harvester finds dozens of subdomains.
+const ruleCMaxSubdomains = 10
+
+// RunRuleC applies Rule C (opt-in): for each subdomain discovered by the harvester,
+// run a shallow re-crawl and record what was found.
+//
+// This rule MUST be gated by the --correlate-crawl flag in the caller. It is never
+// run by default because re-crawling N subdomains sends traffic to potentially
+// different hosts without explicit operator consent.
+//
+// Hard limits (not configurable — intentionally conservative):
+//   - Max 10 subdomains per correlation pass (ruleCMaxSubdomains)
+//   - MaxDepth = 1
+//   - MaxPages = 20
+//
+// Infinite loop note: the correlator runs once post-processing. Subdomains found
+// during the re-crawl are added to the Aggregator but Rule C is not called
+// recursively — the caller runs it exactly once.
+//
+// crawlFn receives a URL and options and streams discovered entities into out.
+func (c *Correlator) RunRuleC(
+	ctx context.Context,
+	crawlFn func(ctx context.Context, targetURL string, opts crawler.CrawlerOptions, out chan<- core.Entity) error,
+) {
+	subdomains := c.agg.ByType(core.EntitySubdomain)
+
+	// Only re-crawl subdomains discovered by the harvester (new discoveries).
+	var harvested []core.Entity
+	for _, sd := range subdomains {
+		if sd.SourceModule == "harvester" {
+			harvested = append(harvested, sd)
+		}
+	}
+
+	// Apply hard cap.
+	if len(harvested) > ruleCMaxSubdomains {
+		harvested = harvested[:ruleCMaxSubdomains]
+		writeErr(c.errOut,
+			"rule_c: capped re-crawl at %d subdomains (found %d total); use --correlate-crawl selectively on large targets",
+			ruleCMaxSubdomains, len(subdomains))
+	}
+
+	opts := crawler.CrawlerOptions{
+		MaxDepth:     1,
+		MaxPages:     20,
+		StayOnDomain: true,
+		IgnoreRobots: false,
+	}
+
+	for _, sd := range harvested {
+		if ctx.Err() != nil {
+			return
+		}
+
+		targetURL := "https://" + sd.Value
+
+		out := make(chan core.Entity, 100)
+		done := make(chan struct{})
+		go func(subdomain core.Entity) {
+			defer close(done)
+			for found := range out {
+				c.agg.Add(found)
+				rel := NewRelation(
+					RelSubdomainToCrawl,
+					subdomain,
+					found,
+					ConfidenceInferredLow,
+					"rule_c_subdomain_crawl",
+				)
+				c.store.Add(rel)
+			}
+		}(sd)
+
+		if err := crawlFn(ctx, targetURL, opts, out); err != nil {
+			writeErr(c.errOut, "rule_c crawl(%s): %v", targetURL, err)
+		}
+		close(out)
+		<-done
+	}
 }
