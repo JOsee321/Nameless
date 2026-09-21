@@ -13,6 +13,15 @@ import (
 	"nameless/internal/core"
 )
 
+// wordlistDNS is the embedded subdomain brute-force wordlist.
+//
+// Location note: this file lives at internal/modules/harvester/data/wordlist_dns.txt
+// instead of the project-level data/ directory (where sites_username.json and
+// sites_emailcheck.json live) because Go's go:embed directive does not allow
+// paths that traverse upward with "../". The embedded file must reside within
+// the package directory tree. This is a Go toolchain constraint, not a style
+// choice — do not "fix" this by duplicating the file to data/ as that creates
+// two sources of truth that will diverge silently.
 //go:embed data/wordlist_dns.txt
 var wordlistDNS []byte
 
