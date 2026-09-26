@@ -15,6 +15,7 @@ import (
 
 	"nameless/internal/config"
 	"nameless/internal/core"
+	"nameless/internal/correlator"
 	"nameless/internal/modules/crawler"
 	"nameless/internal/modules/emailcheck"
 	"nameless/internal/modules/harvester"
@@ -35,8 +36,9 @@ var (
 	scanConfig        string
 	scanDepth         int
 	scanMaxPages      int  // --max-pages: hard ceiling on pages fetched per crawl
-	scanCrawlExternal bool // --crawl-external: follow links outside seed domain
-	scanIgnoreRobots  bool // --ignore-robots:  skip robots.txt enforcement
+	scanCrawlExternal  bool // --crawl-external:   follow links outside seed domain
+	scanIgnoreRobots   bool // --ignore-robots:    skip robots.txt enforcement
+	scanCorrelateCrawl bool // --correlate-crawl:  enable Rule C re-crawl of harvester subdomains (default OFF)
 )
 
 var scanCmd = &cobra.Command{
@@ -131,9 +133,25 @@ func runScan(cmd *cobra.Command, args []string) error {
 		return runCrawlMode(ctx, scanTarget, cfg, client, limiter, pool, agg, out, opts)
 	case "harvester":
 		return runHarvesterMode(ctx, scanTarget, cfg, client, limiter, pool, agg, out)
+	case "full":
+		crawlOpts := crawler.DefaultCrawlerOptions()
+		crawlOpts.MaxDepth = cfg.Depth
+		if cmd.Flags().Changed("max-pages") {
+			if scanMaxPages <= 0 {
+				return fmt.Errorf("--max-pages must be >= 1, got %d", scanMaxPages)
+			}
+			crawlOpts.MaxPages = scanMaxPages
+		}
+		if cmd.Flags().Changed("crawl-external") {
+			crawlOpts.StayOnDomain = !scanCrawlExternal
+		}
+		if cmd.Flags().Changed("ignore-robots") {
+			crawlOpts.IgnoreRobots = scanIgnoreRobots
+		}
+		return runFullMode(ctx, scanTarget, cfg, client, limiter, pool, agg, out, crawlOpts, scanCorrelateCrawl)
 	default:
 		fmt.Fprintf(os.Stderr,
-			"mode %q not yet implemented — available modes: username, emailcheck, crawl, harvester\n", scanMode)
+			"mode %q not yet implemented — available modes: username, emailcheck, crawl, harvester, full\n", scanMode)
 		return nil
 	}
 }
@@ -233,6 +251,8 @@ func init() {
 	scanCmd.Flags().IntVar(&scanMaxPages, "max-pages", 200, "maximum pages fetched per crawl (must be >= 1)")
 	scanCmd.Flags().BoolVar(&scanCrawlExternal, "crawl-external", false, "follow links to external domains during crawl")
 	scanCmd.Flags().BoolVar(&scanIgnoreRobots, "ignore-robots", false, "ignore robots.txt when crawling")
+	scanCmd.Flags().BoolVar(&scanCorrelateCrawl, "correlate-crawl", false,
+		"(--mode full only) re-crawl up to 10 harvester-discovered subdomains during correlation pass (default OFF; opt-in required)")
 
 	_ = scanCmd.MarkFlagRequired("target")
 
@@ -470,6 +490,141 @@ func runHarvesterMode(
 	fmt.Fprintf(os.Stderr,
 		"\n[*] harvester complete in %s — subdomains:%d emails:%d\n",
 		elapsed.Round(time.Millisecond), nSubdomains, nEmails)
+
+	return nil
+}
+
+// runFullMode is the main pipeline for --mode full (PRD §6.2).
+//
+// Execution order: crawler → harvester → correlator (Rule A → Rule B → Rule C).
+//
+// The base modules (username, emailcheck) are NOT run proactively at the start.
+// They are only triggered by the correlator:
+//   - Rule A triggers emailcheck for crawler-discovered emails
+//   - Rule B triggers username check for local-parts derived from those emails
+//   - Rule C optionally re-crawls harvester-discovered subdomains (--correlate-crawl)
+//
+// This design is intentional: in --mode full, the target is a domain/URL, not
+// a known email or username, so running username/emailcheck without an input
+// derived from the scan results would be a no-op anyway.
+func runFullMode(
+	ctx context.Context,
+	target string,
+	cfg *config.Config,
+	client *core.Client,
+	limiter *core.RateLimiter,
+	pool *core.Pool,
+	agg *core.Aggregator,
+	out io.Writer,
+	crawlOpts crawler.CrawlerOptions,
+	correlateCrawl bool,
+) error {
+	start := time.Now()
+
+	// ── Phase 1: Crawl ────────────────────────────────────────────────────────
+	fmt.Fprintf(os.Stderr, "[*] full scan phase 1/3: crawling %s\n", target)
+	crawlURL := target
+	if len(crawlURL) > 0 && crawlURL[:4] != "http" {
+		crawlURL = "https://" + crawlURL
+	}
+	if err := runCrawlMode(ctx, crawlURL, cfg, client, limiter, pool, agg, io.Discard, crawlOpts); err != nil {
+		fmt.Fprintf(os.Stderr, "[!] crawler error: %v (continuing)\n", err)
+	}
+
+	// ── Phase 2: Harvest ──────────────────────────────────────────────────────
+	fmt.Fprintf(os.Stderr, "[*] full scan phase 2/3: harvesting subdomains for %s\n", target)
+	// Strip scheme for harvester (expects bare domain).
+	harvestTarget := target
+	for _, prefix := range []string{"https://", "http://"} {
+		if len(harvestTarget) > len(prefix) && harvestTarget[:len(prefix)] == prefix {
+			harvestTarget = harvestTarget[len(prefix):]
+			break
+		}
+	}
+	if err := runHarvesterMode(ctx, harvestTarget, cfg, client, limiter, pool, agg, io.Discard); err != nil {
+		fmt.Fprintf(os.Stderr, "[!] harvester error: %v (continuing)\n", err)
+	}
+
+	// ── Phase 3: Correlate ────────────────────────────────────────────────────
+	fmt.Fprintf(os.Stderr, "[*] full scan phase 3/3: running correlator\n")
+	store := correlator.NewRelationStore()
+	corr := correlator.New(agg, store, os.Stderr)
+
+	// Build module runners as closures so correlator stays decoupled from
+	// module packages (no circular imports, easy to mock in tests).
+	emailMod, err := emailcheck.New(cfg.Data.SitesEmailcheck, client, limiter, pool)
+	if err != nil {
+		return fmt.Errorf("emailcheck module init: %w", err)
+	}
+	emailcheckFn := func(ctx context.Context, email string, out chan<- core.Entity) error {
+		return emailMod.Run(ctx, email, out)
+	}
+
+	userMod, err := username.New(cfg.Data.SitesUsername, client, limiter, pool)
+	if err != nil {
+		return fmt.Errorf("username module init: %w", err)
+	}
+	usernameFn := func(ctx context.Context, uname string, out chan<- core.Entity) error {
+		return userMod.Run(ctx, uname, out)
+	}
+
+	// Rule A: crawler emails → emailcheck
+	corr.RunRuleA(ctx, emailcheckFn)
+
+	// Rule B: all email local-parts → username (runs after A so A's new emails are included)
+	corr.RunRuleB(ctx, usernameFn)
+
+	// Rule C: harvester subdomains → re-crawl (opt-in only)
+	if correlateCrawl {
+		crawlFn := func(ctx context.Context, targetURL string, opts crawler.CrawlerOptions, entityOut chan<- core.Entity) error {
+			mod := crawler.New(client, limiter, pool, opts)
+			return mod.Run(ctx, targetURL, entityOut)
+		}
+		corr.RunRuleC(ctx, crawlFn)
+	}
+
+	// ── Output ────────────────────────────────────────────────────────────────
+	entities := agg.All()
+	relations := store.All()
+	elapsed := time.Since(start)
+
+	switch cfg.Format {
+	case "json":
+		result := struct {
+			Entities  []core.Entity          `json:"entities"`
+			Relations []correlator.Relation   `json:"relations"`
+		}{Entities: entities, Relations: relations}
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(result); err != nil {
+			return fmt.Errorf("json encode: %w", err)
+		}
+	case "csv":
+		fmt.Fprintln(out, "id,type,value,source_module,source,timestamp")
+		for _, e := range entities {
+			fmt.Fprintf(out, "%s,%s,%s,%s,%s,%s\n",
+				e.ID, e.Type, e.Value, e.SourceModule,
+				e.Metadata["source"], e.Timestamp.Format(time.RFC3339))
+		}
+	case "html":
+		// Rendered by output/html.go (see Fase 5f).
+		return renderHTML(out, target, entities, relations, elapsed)
+	default:
+		return fmt.Errorf("format %q not yet implemented", cfg.Format)
+	}
+
+	// Summary
+	counts := make(map[core.EntityType]int)
+	for _, e := range entities {
+		counts[e.Type]++
+	}
+	fmt.Fprintf(os.Stderr,
+		"\n[*] full scan complete in %s — entities:%d relations:%d\n"+
+			"    subdomains:%d emails:%d usernames:%d endpoints:%d secrets:%d\n",
+		elapsed.Round(time.Millisecond), len(entities), len(relations),
+		counts[core.EntitySubdomain], counts[core.EntityEmail],
+		counts[core.EntityUsername], counts[core.EntityEndpoint],
+		counts[core.EntitySecret])
 
 	return nil
 }
